@@ -124,12 +124,17 @@ class FedInvestDataFetcher(DataFetcherBase):
                     wait_time = backoff_factor * (2 ** (retries - 1))
                     self._logger.debug(f"UST Prices - Throttled. Waiting for {wait_time} seconds before retrying...")
                     await asyncio.sleep(wait_time)
-
-                except Exception as e:
-                    self._logger.error(f"UST Prices - Error for {date}: {e}")
+                except httpx.TimeoutException as e:
+                    self._logger.error(f"UST Prices - {date} Timeout: {e}")
                     retries += 1
                     wait_time = backoff_factor * (2 ** (retries - 1))
-                    self._logger.debug(f"UST Prices - Throttled. Waiting for {wait_time} seconds before retrying...")
+                    self._logger.debug(f"UST Prices - {date} Timeout. Waiting for {wait_time} seconds before retrying...")
+                    await asyncio.sleep(wait_time)
+                except Exception as e:
+                    self._logger.error(f"UST Prices - {date} Error: {e}")
+                    retries += 1
+                    wait_time = backoff_factor * (2 ** (retries - 1))
+                    self._logger.debug(f"UST Prices - {date} Waiting for {wait_time} seconds before retrying...")
                     await asyncio.sleep(wait_time)
 
             raise ValueError(f"UST Prices - Max retries exceeded for {date}")
@@ -163,5 +168,3 @@ class FedInvestDataFetcher(DataFetcherBase):
             for date in dates
         ]
         return tasks
-
-  
